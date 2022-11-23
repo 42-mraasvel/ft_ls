@@ -7,3 +7,4 @@ utils.c
 
 target_include_directories(${NAME} PUBLIC ../include)
 target_link_libraries(${NAME} PUBLIC ft)
+target_compile_options(${NAME} PRIVATE -Wall -Wextra -Werror)
