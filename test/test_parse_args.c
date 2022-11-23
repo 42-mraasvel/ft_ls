@@ -19,7 +19,7 @@ Input:
 
 3x3 + 2 = 11 testcases
 */
-#include <stdio.h>
+
 static bool only_given_options_enabled(const bool* options, const char* enabled) {
 	for (int i = 1; i < 255; i++) {
 		bool contains = strchr(enabled, i) != NULL;
@@ -53,7 +53,7 @@ Test(no_files_no_options, test_parse_args) {
 	char* argv[] = { "program", NULL };
 	size_t argc = ft_count_strings(argv);
 	int result = parse_args(&args, argc, argv, ALLOWED_OPTIONS);
-	cr_assert(result == 0);
+	cr_assert(result == Success);
 	cr_assert(args.files->length == 0);
 	cr_assert(only_given_options_enabled(args.options, ""));
 }
@@ -63,7 +63,7 @@ Test(no_files_one_option, test_parse_args) {
 	char* argv[] = { "program", "-l", NULL };
 	size_t argc = ft_count_strings(argv);
 	int result = parse_args(&args, argc, argv, ALLOWED_OPTIONS);
-	cr_assert(result == 0);
+	cr_assert(result == Success);
 	cr_assert(args.files->length == 0);
 	cr_assert(only_given_options_enabled(args.options, "l"));
 }
@@ -73,7 +73,7 @@ Test(no_files_multiple_options, test_parse_args) {
 	char* argv[] = { "program", "-lRt", NULL };
 	size_t argc = ft_count_strings(argv);
 	int result = parse_args(&args, argc, argv, ALLOWED_OPTIONS);
-	cr_assert(result == 0);
+	cr_assert(result == Success);
 	cr_assert(args.files->length == 0);
 	cr_assert(only_given_options_enabled(args.options, "lRt"));
 }
@@ -83,7 +83,7 @@ Test(one_file_no_options, test_parse_args) {
 	char* argv[] = { "program", "filename", NULL };
 	size_t argc = ft_count_strings(argv);
 	int result = parse_args(&args, argc, argv, ALLOWED_OPTIONS);
-	cr_assert(result == 0);
+	cr_assert(result == Success);
 
 	cr_assert(args.files->length == 1);
 	cr_assert(only_given_options_enabled(args.options, ""));
@@ -96,7 +96,7 @@ Test(one_file_one_option, test_parse_args) {
 	char* argv[] = { "program", "filename", "-l", NULL };
 	size_t argc = ft_count_strings(argv);
 	int result = parse_args(&args, argc, argv, ALLOWED_OPTIONS);
-	cr_assert(result == 0);
+	cr_assert(result == Success);
 
 	cr_assert(args.files->length == 1);
 	cr_assert(only_given_options_enabled(args.options, "l"));
@@ -109,7 +109,7 @@ Test(one_file_multiple_options, test_parse_args) {
 	char* argv[] = { "program", "-r", "filename", "-lR", NULL };
 	size_t argc = ft_count_strings(argv);
 	int result = parse_args(&args, argc, argv, ALLOWED_OPTIONS);
-	cr_assert(result == 0);
+	cr_assert(result == Success);
 
 	cr_assert(args.files->length == 1);
 	cr_assert(only_given_options_enabled(args.options, "rlR"));
@@ -122,7 +122,7 @@ Test(multiple_files_no_options, test_parse_args) {
 	char* argv[] = { "program", "-", "filename", "filename2", NULL };
 	size_t argc = ft_count_strings(argv);
 	int result = parse_args(&args, argc, argv, ALLOWED_OPTIONS);
-	cr_assert(result == 0);
+	cr_assert(result == Success);
 
 	cr_assert(args.files->length == 3);
 	cr_assert(only_given_options_enabled(args.options, ""));
@@ -135,7 +135,7 @@ Test(multiple_files_one_option, test_parse_args) {
 	char* argv[] = { "program", "-", "-t", "filename", "x", "y", NULL };
 	size_t argc = ft_count_strings(argv);
 	int result = parse_args(&args, argc, argv, ALLOWED_OPTIONS);
-	cr_assert(result == 0);
+	cr_assert(result == Success);
 
 	cr_assert(args.files->length == 4);
 	cr_assert(only_given_options_enabled(args.options, "t"));
@@ -148,7 +148,7 @@ Test(multiple_files_multiple_options, test_parse_args) {
 	char* argv[] = { "program", "-", "-t", "filename", "x", "y", "-lR", "-t", "t", NULL };
 	size_t argc = ft_count_strings(argv);
 	int result = parse_args(&args, argc, argv, ALLOWED_OPTIONS);
-	cr_assert(result == 0);
+	cr_assert(result == Success);
 
 	cr_assert(args.files->length == 5);
 	cr_assert(only_given_options_enabled(args.options, "tlR"));
@@ -161,7 +161,7 @@ Test(forbidden_option, test_parse_args) {
 	char* argv[] = { "program", "-l", "-z", NULL };
 	size_t argc = ft_count_strings(argv);
 	int result = parse_args(&args, argc, argv, ALLOWED_OPTIONS);
-	cr_assert(result == -1);
+	cr_assert(result == ArgumentError);
 }
 
 Test(forbidden_option_nested, test_parse_args) {
@@ -169,5 +169,5 @@ Test(forbidden_option_nested, test_parse_args) {
 	char* argv[] = { "program", "-lzR", NULL };
 	size_t argc = ft_count_strings(argv);
 	int result = parse_args(&args, argc, argv, ALLOWED_OPTIONS);
-	cr_assert(result == -1);
+	cr_assert(result == ArgumentError);
 }

@@ -6,7 +6,7 @@ BUILD_DIR := debug
 CMAKE_FLAGS := -DCMAKE_BUILD_TYPE=Debug
 endif
 
-NAME = $(BUILD_DIR)/examples/example
+NAME = $(BUILD_DIR)/src/ft_ls
 TEST_NAME = $(BUILD_DIR)/test/test
 
 run: build
