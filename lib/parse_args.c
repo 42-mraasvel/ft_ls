@@ -1,11 +1,14 @@
 #include "parse_args.h"
 #include <stdio.h>
+#include <errno.h>
+#include <string.h>
 
 static ResultType parse_options(Arguments* args, const char* options, const char* allowed_options) {
 	for (int i = 0; options[i] != '\0'; i++) {
 		unsigned int option = (unsigned char)options[i];
 		if (ft_strchr(allowed_options, options[i]) == NULL) {
 			fprintf(stderr, "%s: invalid option -- '%c'\n", args->program_name, options[i]);
+			fprintf(stderr, "Try 'ls --help' for more information\n");
 			return ArgumentError;
 		}
 		args->options[option] = true;
@@ -36,7 +39,7 @@ ResultType parse_args(Arguments* args, int argc, char *argv[], const char* allow
 		} else {
 			// file argument
 			if (vecstr_push_back(args->files, argv[i]) != 0) {
-				perror(args->program_name);
+				fprintf(stderr, "%s: error: %s\n", args->program_name, strerror(errno));
 				args_destroy(args);
 				return SystemError;
 			}
