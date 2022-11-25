@@ -5,6 +5,7 @@ add_library(${NAME} STATIC
 	utils.c
 	partition.c
 	"file.c"
+	process_files.c
 )
 
 target_include_directories(${NAME} PUBLIC ../include)

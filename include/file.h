@@ -21,6 +21,8 @@ typedef struct File {
 	struct stat info;
 } File;
 
+int filecmp_by_path(File* a, File* b);
+
 MONOVEC_DECLARATION(File, VecFile, vecfile);
 
 // [WARNING] path given as variable is returned, make sure it stays allocated

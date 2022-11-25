@@ -6,8 +6,7 @@
 #include <string.h>
 
 // partition input into files and directories
-ResultType partition(Arguments* args, VecFile* files, VecFile* directories) {
-	VecStr* input = args->files;
+ResultType partition(Arguments* args, VecStr* input, VecFile* files, VecFile* directories) {
 	for (int i = 0; i < (int)input->length; i++) {
 		char* path = *vecstr_get(input, i);
 		File file;
