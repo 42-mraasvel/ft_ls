@@ -6,6 +6,7 @@
 #include <string.h>
 
 // partition input into files and directories
+// invariant: files/directories should have at least enough capacity to hold all input files
 ResultType partition(Arguments* args, VecStr* input, VecFile* files, VecFile* directories) {
 	for (int i = 0; i < (int)input->length; i++) {
 		char* path = *vecstr_get(input, i);
@@ -17,6 +18,7 @@ ResultType partition(Arguments* args, VecStr* input, VecFile* files, VecFile* di
 		} else if (result != Success) {
 			return result;
 		}
+		// allocation push_back errors are not checked because files/directories are allocated with enough capacity
 		if (file.type == Directory) {
 			vecfile_push_back(directories, file);
 		} else {

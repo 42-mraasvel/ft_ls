@@ -15,5 +15,7 @@ typedef enum ResultType {
 
 void format_error(const char* fmt, ...);
 void set_program_name(const char* name);
+void abort_program(const char* s);
+void* malloc_check(void* malloc_result);
 
 #endif

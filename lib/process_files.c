@@ -18,50 +18,48 @@ ResultType process_files(VecFile* files, Arguments* args) {
 			printf("\n");
 		}
 		// - skip '.' if -a is not present
-		if (ft_starts_with(files->table[i].path, ".")) {
+		if (ft_starts_with(files->table[i].name, ".")) {
 			continue;
 		}
 		first = false;
 		// output file
 		// - output depends on options: -l
-		printf("%s", files->table[i].path);
+		printf("%s", files->table[i].name);
 		// add to directories if -R specified and file is a directory
 	}
 	printf("\n");
+	// process any other present directories
 	return Success;
 }
 
 ResultType process_dir(File* dir, Arguments* args) {
 	// TODO: review assertion choice
 	assert(dir->type == Directory);
-	// for each direntry
-	// add it to the list of files
-	// process the files
-
-	DIR* dirp = opendir(dir->path);
+	const char* dir_path = dir->name;
+	if (dir->path) {
+		dir_path = string_cstr(dir->path);
+	}
+	DIR* dirp = opendir(dir_path);
 	if (dirp == NULL) {
-		//TODO: review error message, error code
-		format_error("cannot open directory '%s': %s\n", dir->path, strerror(errno));
+		//TODO: review error message, returned error code
+		format_error("cannot open directory '%s': %s\n", dir_path, strerror(errno));
 		return SystemError;
 	}
-	VecFile* files = vecfile_construct(2);
-	if (files == NULL) {
-		format_error("error: %s\n", strerror(errno));
-		closedir(dirp);
-		return SystemError;
-	}
+	VecFile* files = malloc_check(vecfile_construct(2));
 	struct dirent* entry;
 	while ((entry = readdir(dirp))) {
 		File file;
-		if (file_from_dirent(dir->path, entry, &file) != Success) {
+		if (file_from_dirent(dir_path, entry, &file) != Success) {
 			format_error("cannot access file '%s': %s\n", entry->d_name, strerror(errno));
 			continue;
 		}
-		vecfile_push_back(files, file);
+		if (vecfile_push_back(files, file) == -1) {
+			abort_program("malloc");
+		}
 	}
 	closedir(dirp);
-	vecfile_sort_unstable_by(files, filecmp_by_path);
+	vecfile_sort_unstable_by(files, filecmp_by_name);
 	ResultType result = process_files(files, args);
-	vecfile_destroy(files);
+	vecfile_destroy_with(files, file_destroy);
 	return result;
 }

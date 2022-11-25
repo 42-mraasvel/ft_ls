@@ -11,28 +11,31 @@
 ResultType partition(Arguments* args, VecStr* input, VecFile* files, VecFile* directories);
 ResultType process_dir(File* dir, Arguments* args);
 
-static ResultType do_partition(Arguments* args, VecStr* input, VecFile** files, VecFile** directories) {
-	*directories = vecfile_construct(input->length);
-	*files = vecfile_construct(input->length);
-	if (!directories || !files) {
-		vecfile_destroy(*directories);
-		vecfile_destroy(*files);
-		return SystemError;
+static ResultType process_directories(Arguments* args, VecFile* directories) {
+	for (int i = 0; i < (int)directories->length; i++) {
+		if (i != 0) {
+			printf("\n");
+		}
+		File* dir = &directories->table[i];
+		if (args->files->length > 1) {
+			printf("%s:\n", dir->name);
+		}
+		process_dir(dir, args);
 	}
-	return partition(args, args->files, *files, *directories);
+	return Success;
 }
 
 static ResultType process_arguments(Arguments* args) {
 	// 1. partition arguments into directories and files -- report but ignore error on inaccessable files
-	VecFile* files = NULL;
-	VecFile* directories = NULL;
-	if (do_partition(args, args->files, &files, &directories) != Success) {
+	VecFile* files = malloc_check(vecfile_construct(args->files->length));;
+	VecFile* directories = malloc_check(vecfile_construct(args->files->length));;
+	if (partition(args, args->files, files, directories) != Success) {
 		return SystemError;
 	}
 	// 2. sort and process arguments
 	// sort is affected by -r, -t (reverse sort, sort by time last modified)
-	vecfile_sort_unstable_by(files, filecmp_by_path);
-	vecfile_sort_unstable_by(directories, filecmp_by_path);
+	vecfile_sort_unstable_by(files, filecmp_by_name);
+	vecfile_sort_unstable_by(directories, filecmp_by_name);
 	ResultType process_files(VecFile* files, Arguments* args);
 	if (process_files(files, args) != Success) {
 		// TODO: can it fail?
@@ -41,19 +44,10 @@ static ResultType process_arguments(Arguments* args) {
 	if (files->length > 0 && directories->length > 0) {
 		printf("\n");
 	}
-	// Process given directories
-	for (int i = 0; i < (int)directories->length; i++) {
-		if (i != 0) {
-			printf("\n");
-		}
-		File* dir = &directories->table[i];
-		if (args->files->length > 1) {
-			printf("%s:\n", dir->path);
-		}
-		process_dir(dir, args);
-	}
-	vecfile_destroy(files);
-	vecfile_destroy(directories);
+	process_directories(args, directories);
+	vecfile_destroy_with(files, file_destroy);
+	vecfile_destroy_with(directories, file_destroy);
+	return Success;
 }
 
 static char* program_name;
@@ -74,6 +68,7 @@ int main(int argc, char* argv[]) {
 			return GeneralError;
 		}
 		result = process_dir(&cwd, &args);
+		file_destroy(&cwd);
 	} else {
 		result = process_arguments(&args);
 	}

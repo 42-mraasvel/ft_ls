@@ -28,30 +28,31 @@ static FileType get_filetype(File* file) {
 }
 
 // invariant: file is not NULL
+// note: PATH will be NULL in the returned file
 ResultType file_from_path(const char* path, File* file) {
-	file->path = path;
-	file->parent = NULL;
 	if (stat(path, &file->info) == -1) {
+		return StatError;
+	}
+	file->name = malloc_check(ft_strdup(path));
+	file->path = NULL;
+	file->type = get_filetype(file);
+	return Success;
+}
+
+ResultType file_from_dirent(const char* parent, struct dirent* entry, File* file) {
+	file->name = malloc_check(ft_strdup(entry->d_name));
+	file->path = string_format("%s/%s", parent, file->name);
+	if (stat(string_cstr(file->path), &file->info) == -1) {
+		file_destroy(file);
 		return StatError;
 	}
 	file->type = get_filetype(file);
 	return Success;
 }
 
-ResultType file_from_dirent(const char* parent, struct dirent* entry, File* file) {
-	//TODO: leaking data, need memory allocation protection and general memory allocation management plan
-	//Best way to handle it is probably to either tag as `Owned/Borrowed` and create a general file_destroy function
-	//Then Vec can have a vec_destroy_with, which takes a delete function
-	//That way the wrapping/overarching code doesn't have to deal with it: it's delegated to destructor functions
-	file->path = ft_strdup(entry->d_name);
-	file->parent = parent;
-	String* full_path = string_format("%s/%s", parent, entry->d_name);
-	if (stat(string_cstr(full_path), &file->info) == -1) {
-		return StatError;
-	}
-	string_destroy(full_path);
-	file->type = get_filetype(file);
-	return Success;
+void file_destroy(File* file) {
+	free(file->name);
+	string_destroy(file->path);
 }
 
 static const char* filetype_to_string(FileType type) {
@@ -76,14 +77,14 @@ static const char* filetype_to_string(FileType type) {
 	return "";
 }
 
-int filecmp_by_path(File* a, File* b) {
-	return ft_strcmp(a->path, b->path);
+int filecmp_by_name(File* a, File* b) {
+	return ft_strcmp(a->name, b->name);
 }
 
 void print_file(File* file) {
 	printf("File: ");
-	if (file->path) {
-		printf("Path('%s'), ", file->path);
+	if (file->name) {
+		printf("Path('%s'), ", file->name);
 	}
 	printf("Type('%s')", filetype_to_string(file->type));
 	printf("\n");

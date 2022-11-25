@@ -21,10 +21,7 @@ static ResultType parse_options(Arguments* args, const char* options, const char
 // - argc is the number of strings in argv
 // - allowed_options is NOT NULL
 ResultType parse_args(Arguments* args, int argc, char *argv[], const char* allowed_options) {
-	args->files = vecstr_construct(0);
-	if (!args->files) {
-		return SystemError;
-	}
+	args->files = malloc_check(vecstr_construct(0));
 	// skip program name
 	argc--; argv++;
 	ft_memset(args->options, false, 255 * sizeof(bool));
@@ -38,9 +35,7 @@ ResultType parse_args(Arguments* args, int argc, char *argv[], const char* allow
 		} else {
 			// file argument
 			if (vecstr_push_back(args->files, argv[i]) != 0) {
-				format_error("error: %s\n", strerror(errno));
-				args_destroy(args);
-				return SystemError;
+				abort_program("malloc");
 			}
 		}
 	}
