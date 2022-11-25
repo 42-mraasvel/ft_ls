@@ -41,12 +41,12 @@ ResultType process_dir(File* dir, Arguments* args) {
 	DIR* dirp = opendir(dir->path);
 	if (dirp == NULL) {
 		//TODO: review error message, error code
-		fprintf(stderr, "%s: cannot open directory: %s: %s\n", args->program_name, dir->path, strerror(errno));
+		format_error("cannot open directory '%s': %s\n", dir->path, strerror(errno));
 		return SystemError;
 	}
 	VecFile* files = vecfile_construct(2);
 	if (files == NULL) {
-		fprintf(stderr, "%s: error: %s\n", args->program_name, strerror(errno));
+		format_error("error: %s\n", strerror(errno));
 		closedir(dirp);
 		return SystemError;
 	}
@@ -54,7 +54,7 @@ ResultType process_dir(File* dir, Arguments* args) {
 	while ((entry = readdir(dirp))) {
 		File file;
 		if (file_from_dirent(dir->path, entry, &file) != Success) {
-			fprintf(stderr, "%s: cannot access file: %s: %s\n", args->program_name, entry->d_name, strerror(errno));
+			format_error("cannot access file '%s': %s\n", entry->d_name, strerror(errno));
 			continue;
 		}
 		vecfile_push_back(files, file);

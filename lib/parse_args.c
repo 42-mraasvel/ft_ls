@@ -7,7 +7,7 @@ static ResultType parse_options(Arguments* args, const char* options, const char
 	for (int i = 0; options[i] != '\0'; i++) {
 		unsigned int option = (unsigned char)options[i];
 		if (ft_strchr(allowed_options, options[i]) == NULL) {
-			fprintf(stderr, "%s: invalid option -- '%c'\n", args->program_name, options[i]);
+			format_error("invalid option -- '%c'\n", options[i]);
 			fprintf(stderr, "Try 'ls --help' for more information\n");
 			return ArgumentError;
 		}
@@ -21,12 +21,11 @@ static ResultType parse_options(Arguments* args, const char* options, const char
 // - argc is the number of strings in argv
 // - allowed_options is NOT NULL
 ResultType parse_args(Arguments* args, int argc, char *argv[], const char* allowed_options) {
-	// skip program name
 	args->files = vecstr_construct(0);
 	if (!args->files) {
 		return SystemError;
 	}
-	args->program_name = argv[0];
+	// skip program name
 	argc--; argv++;
 	ft_memset(args->options, false, 255 * sizeof(bool));
 	for (int i = 0; i < argc; i++) {
@@ -39,7 +38,7 @@ ResultType parse_args(Arguments* args, int argc, char *argv[], const char* allow
 		} else {
 			// file argument
 			if (vecstr_push_back(args->files, argv[i]) != 0) {
-				fprintf(stderr, "%s: error: %s\n", args->program_name, strerror(errno));
+				format_error("error: %s\n", strerror(errno));
 				args_destroy(args);
 				return SystemError;
 			}

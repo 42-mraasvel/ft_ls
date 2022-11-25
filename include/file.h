@@ -18,6 +18,7 @@ typedef enum FileType {
 
 typedef struct File {
 	enum FileType type;
+	const char* name;
 	const char* path;
 	const char* parent;
 	struct stat info;

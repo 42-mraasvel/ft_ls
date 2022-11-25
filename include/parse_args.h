@@ -10,7 +10,6 @@ typedef struct Arguments {
 	// contains non-option arguments: files to check or explore
 	// empty if none are present
 	VecStr* files;
-	const char* program_name;
 } Arguments;
 
 ResultType parse_args(Arguments* args, int argc, char *argv[], const char* allowed_options);

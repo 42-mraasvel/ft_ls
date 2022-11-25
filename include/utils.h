@@ -13,4 +13,7 @@ typedef enum ResultType {
 	StatError = 4,
 } ResultType;
 
+void format_error(const char* fmt, ...);
+void set_program_name(const char* name);
+
 #endif

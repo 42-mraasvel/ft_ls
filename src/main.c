@@ -3,6 +3,8 @@
 #include <stdio.h>
 #include <errno.h>
 #include <string.h>
+#include <stdio.h>
+#include <stdarg.h>
 
 #define ALLOWED_OPTIONS "lRart"
 
@@ -54,7 +56,10 @@ static ResultType process_arguments(Arguments* args) {
 	vecfile_destroy(directories);
 }
 
+static char* program_name;
+
 int main(int argc, char* argv[]) {
+	set_program_name(argv[0]);
 	int result = Success;
 	Arguments args;
 	ResultType parse_result = parse_args(&args, argc, argv, ALLOWED_OPTIONS);
@@ -65,7 +70,7 @@ int main(int argc, char* argv[]) {
 	if (args.files->length == 0) {
 		File cwd;
 		if (file_from_path(".", &cwd) != Success) {
-			fprintf(stderr, "%s: cannot access '%s': %s\n", args.program_name, ".", strerror(errno));
+			format_error("cannot access '%s': %s\n", ".", strerror(errno));
 			return GeneralError;
 		}
 		result = process_dir(&cwd, &args);
