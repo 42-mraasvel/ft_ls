@@ -31,6 +31,8 @@ ResultType process_files(VecFile* files, Arguments* args) {
 ResultType process_dir(File* dir, Arguments* args) {
 	// TODO: review assertion choice
 	assert(dir->type == Directory);
-
+	// for each direntry
+	// add it to the list of files
+	// process the files
 	return Success;
 }
