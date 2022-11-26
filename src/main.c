@@ -17,7 +17,7 @@ static ResultType process_directories(Arguments* args, VecFile* directories) {
 			printf("\n");
 		}
 		File* dir = &directories->table[i];
-		if (args->files->length > 1) {
+		if (args->files->length > 1 || args->options['R']) {
 			printf("%s:\n", dir->name);
 		}
 		process_dir(dir, args);

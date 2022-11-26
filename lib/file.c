@@ -78,8 +78,21 @@ static const char* filetype_to_string(FileType type) {
 	return "";
 }
 
+bool is_special_file(File* a) {
+	// a == "." || a == ".."
+	return ft_strcmp(a->name, ".") == 0 || ft_strcmp(a->name, "..") == 0;
+}
+
+static const char* get_file_name(File* a) {
+	if (ft_starts_with(a->name, ".") && !is_special_file(a)) {
+		return a->name + 1;
+	} else {
+		return a->name;
+	}
+}
+
 int filecmp_by_name(File* a, File* b) {
-	return ft_strcmp(a->name, b->name);
+	return ft_strcmp_ignore_case(get_file_name(a), get_file_name(b));
 }
 
 int filecmp_by_name_reverse(File* a, File* b) {
@@ -121,6 +134,10 @@ void print_file(File* file) {
 	}
 	printf("Type('%s')", filetype_to_string(file->type));
 	printf("\n");
+}
+
+void file_display(File* file) {
+	printf("%s", file->name);
 }
 
 MONOVEC_DEFINITIONS(File, VecFile, vecfile);
