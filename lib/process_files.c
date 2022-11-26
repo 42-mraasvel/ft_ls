@@ -15,7 +15,7 @@ ResultType process_files(VecFile* files, Arguments* args) {
 	bool first = true;
 	for (int i = 0; i < (int)files->length; i++) {
 		// - skip '.' if -a is not present
-		if (ft_starts_with(files->table[i].name, ".")) {
+		if (!args->options['a'] && ft_starts_with(files->table[i].name, ".")) {
 			continue;
 		}
 		if (!first) {
