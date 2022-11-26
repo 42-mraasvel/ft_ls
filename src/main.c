@@ -34,8 +34,8 @@ static ResultType process_arguments(Arguments* args) {
 	}
 	// 2. sort and process arguments
 	// sort is affected by -r, -t (reverse sort, sort by time last modified)
-	vecfile_sort_unstable_by(files, filecmp_by_name);
-	vecfile_sort_unstable_by(directories, filecmp_by_name);
+	sort_files(files, args);
+	sort_files(directories, args);
 	ResultType process_files(VecFile* files, Arguments* args);
 	if (process_files(files, args) != Success) {
 		// TODO: can it fail?

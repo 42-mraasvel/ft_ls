@@ -1,5 +1,6 @@
 #include "file.h"
 #include "ft_string.h"
+#include "parse_args.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/stat.h>
@@ -79,6 +80,38 @@ static const char* filetype_to_string(FileType type) {
 
 int filecmp_by_name(File* a, File* b) {
 	return ft_strcmp(a->name, b->name);
+}
+
+int filecmp_by_name_reverse(File* a, File* b) {
+	return filecmp_by_name(b, a);
+}
+
+int filecmp_by_time(File* a, File* b) {
+	if (a->info.st_mtime > b->info.st_mtime) {
+		return -1;
+	} else if (a->info.st_mtime < b->info.st_mtime) {
+		return 1;
+	} else {
+		return 0;
+	}
+}
+
+int filecmp_by_time_reverse(File* a, File* b) {
+	return filecmp_by_time(b, a);
+}
+
+void sort_files(VecFile* files, Arguments* args) {
+	if (args->options['r']) {
+		if (args->options['t']) {
+			vecfile_sort_unstable_by(files, filecmp_by_time_reverse);
+		} else {
+			vecfile_sort_unstable_by(files, filecmp_by_name_reverse);
+		}
+	} else if (args->options['t']) {
+		vecfile_sort_unstable_by(files, filecmp_by_time);
+	} else {
+		vecfile_sort_unstable_by(files, filecmp_by_name);
+	}
 }
 
 void print_file(File* file) {

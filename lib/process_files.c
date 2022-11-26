@@ -14,12 +14,12 @@ ResultType process_files(VecFile* files, Arguments* args) {
 	}
 	bool first = true;
 	for (int i = 0; i < (int)files->length; i++) {
-		if (!first) {
-			printf("\n");
-		}
 		// - skip '.' if -a is not present
 		if (ft_starts_with(files->table[i].name, ".")) {
 			continue;
+		}
+		if (!first) {
+			printf("\n");
 		}
 		first = false;
 		// output file
@@ -58,7 +58,7 @@ ResultType process_dir(File* dir, Arguments* args) {
 		}
 	}
 	closedir(dirp);
-	vecfile_sort_unstable_by(files, filecmp_by_name);
+	sort_files(files, args);
 	ResultType result = process_files(files, args);
 	vecfile_destroy_with(files, file_destroy);
 	return result;
