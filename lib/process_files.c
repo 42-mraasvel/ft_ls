@@ -47,7 +47,7 @@ ResultType process_files(VecFile* files, Arguments* args) {
 	return Success;
 }
 
-#ifdef __linux__
+#ifndef __linux__
 static bool contains_directory(VecFile* files, Arguments* args) {
 	for (int i = 0; i < (int)files->length; i++) {
 		File* file = &files->table[i];
