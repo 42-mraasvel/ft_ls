@@ -21,7 +21,10 @@ $(BUILD_DIR):
 test: build
 	$(TEST_NAME)
 
+system_test:
+	cd system_test && bash test_ls.sh
+
 release:
 	$(MAKE) RELEASE=1
 
-.PHONY: run build release
+.PHONY: run build release system_test
