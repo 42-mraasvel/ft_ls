@@ -6,10 +6,21 @@
 #include <errno.h>
 #include <string.h>
 
-ResultType process_dir(File* dir, Arguments* args, bool always_print_name);
+ResultType process_directory(File* dir, Arguments* args, bool always_print_name);
 
 static bool should_handle_file(File* file, Arguments* args) {
+	// skip hidden files if '-a' not present
 	return args->options['a'] || !file->name || !ft_starts_with(file->name, ".");
+}
+
+static void process_directories(VecFile* directories, Arguments* args) {
+	sort_files(directories, args);
+	for (int i = 0; i < (int)directories->length; i++) {
+		printf("\n");
+		File* dir = &directories->table[i];
+		process_directory(dir, args, true);
+	}
+	vecfile_destroy(directories);
 }
 
 // print out files
@@ -21,10 +32,6 @@ ResultType process_files(VecFile* files, Arguments* args) {
 	VecFile* nested_directories = malloc_check(vecfile_construct(0));
 	for (int i = 0; i < (int)files->length; i++) {
 		File* file = &files->table[i];
-		// - skip '.' if -a is not present
-		if (!should_handle_file(file, args)) {
-			continue;
-		}
 		// output file
 		// - output depends on options: -l
 		file_display(file);
@@ -36,29 +43,23 @@ ResultType process_files(VecFile* files, Arguments* args) {
 		}
 		printf("\n");
 	}
-
-	sort_files(nested_directories, args);
-	for (int i = 0; i < (int)nested_directories->length; i++) {
-		printf("\n");
-		File* dir = &nested_directories->table[i];
-		process_dir(dir, args, true);
-	}
-	vecfile_destroy(nested_directories);
-
+	process_directories(nested_directories, args);
 	return Success;
 }
 
+#ifdef __linux__
 static bool contains_directory(VecFile* files, Arguments* args) {
 	for (int i = 0; i < (int)files->length; i++) {
 		File* file = &files->table[i];
-		if (file->type == Directory && should_handle_file(file, args) && !is_special_file(file)) {
+		if (file->type == Directory && !is_special_file(file)) {
 			return true;
 		}
 	}
 	return false;
 }
+#endif
 
-ResultType process_dir(File* dir, Arguments* args, bool always_print_name) {
+ResultType process_directory(File* dir, Arguments* args, bool always_print_name) {
 	// TODO: review assertion choice
 	assert(dir->type == Directory);
 	const char* dir_path = dir->name;
@@ -78,6 +79,9 @@ ResultType process_dir(File* dir, Arguments* args, bool always_print_name) {
 		if (file_from_dirent(dir_path, entry, &file) != Success) {
 			format_error("cannot access file '%s': %s\n", entry->d_name, strerror(errno));
 			continue;
+		} else if (!should_handle_file(&file, args)) {
+			file_destroy(&file);
+			continue;
 		}
 		if (vecfile_push_back(files, file) == -1) {
 			abort_program("malloc");
@@ -85,7 +89,11 @@ ResultType process_dir(File* dir, Arguments* args, bool always_print_name) {
 	}
 	closedir(dirp);
 	// Determine if we are printing the filename
+#ifdef __linux__
+	if (always_print_name || args->options['R']) {
+#else
 	if (always_print_name || (contains_directory(files, args) && args->options['R'])) {
+#endif
 		printf("%s:\n", dir_path);
 	}
 	sort_files(files, args);
