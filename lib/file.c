@@ -105,7 +105,7 @@ int filecmp_by_time(File* a, File* b) {
 	} else if (a->info.st_mtime < b->info.st_mtime) {
 		return 1;
 	} else {
-		return 0;
+		return filecmp_by_name(a, b);
 	}
 }
 

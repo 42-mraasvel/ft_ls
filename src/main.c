@@ -9,7 +9,7 @@
 #define ALLOWED_OPTIONS "lRart"
 
 ResultType partition(Arguments* args, VecStr* input, VecFile* files, VecFile* directories);
-ResultType process_dir(File* dir, Arguments* args);
+ResultType process_dir(File* dir, Arguments* args, bool always_print_name);
 
 static ResultType process_directories(Arguments* args, VecFile* directories) {
 	for (int i = 0; i < (int)directories->length; i++) {
@@ -17,10 +17,7 @@ static ResultType process_directories(Arguments* args, VecFile* directories) {
 			printf("\n");
 		}
 		File* dir = &directories->table[i];
-		if (args->files->length > 1 || args->options['R']) {
-			printf("%s:\n", dir->name);
-		}
-		process_dir(dir, args);
+		process_dir(dir, args, args->files->length > 1);
 	}
 	return Success;
 }
@@ -67,7 +64,7 @@ int main(int argc, char* argv[]) {
 			format_error("cannot access '%s': %s\n", ".", strerror(errno));
 			return GeneralError;
 		}
-		result = process_dir(&cwd, &args);
+		result = process_dir(&cwd, &args, false);
 		file_destroy(&cwd);
 	} else {
 		result = process_arguments(&args);

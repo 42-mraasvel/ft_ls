@@ -6,7 +6,11 @@
 #include <errno.h>
 #include <string.h>
 
-ResultType process_dir(File* dir, Arguments* args);
+ResultType process_dir(File* dir, Arguments* args, bool always_print_name);
+
+static bool should_handle_file(File* file, Arguments* args) {
+	return args->options['a'] || !file->name || !ft_starts_with(file->name, ".");
+}
 
 // print out files
 // recursively process directories if -R
@@ -18,7 +22,7 @@ ResultType process_files(VecFile* files, Arguments* args) {
 	for (int i = 0; i < (int)files->length; i++) {
 		File* file = &files->table[i];
 		// - skip '.' if -a is not present
-		if (!args->options['a'] && ft_starts_with(file->name, ".")) {
+		if (!should_handle_file(file, args)) {
 			continue;
 		}
 		// output file
@@ -37,15 +41,24 @@ ResultType process_files(VecFile* files, Arguments* args) {
 	for (int i = 0; i < (int)nested_directories->length; i++) {
 		printf("\n");
 		File* dir = &nested_directories->table[i];
-		printf("%s:\n", string_cstr(dir->path));
-		process_dir(dir, args);
+		process_dir(dir, args, true);
 	}
 	vecfile_destroy(nested_directories);
 
 	return Success;
 }
 
-ResultType process_dir(File* dir, Arguments* args) {
+static bool contains_directory(VecFile* files, Arguments* args) {
+	for (int i = 0; i < (int)files->length; i++) {
+		File* file = &files->table[i];
+		if (file->type == Directory && should_handle_file(file, args) && !is_special_file(file)) {
+			return true;
+		}
+	}
+	return false;
+}
+
+ResultType process_dir(File* dir, Arguments* args, bool always_print_name) {
 	// TODO: review assertion choice
 	assert(dir->type == Directory);
 	const char* dir_path = dir->name;
@@ -71,6 +84,10 @@ ResultType process_dir(File* dir, Arguments* args) {
 		}
 	}
 	closedir(dirp);
+	// Determine if we are printing the filename
+	if (always_print_name || (contains_directory(files, args) && args->options['R'])) {
+		printf("%s:\n", dir_path);
+	}
 	sort_files(files, args);
 	ResultType result = process_files(files, args);
 	vecfile_destroy_with(files, file_destroy);
