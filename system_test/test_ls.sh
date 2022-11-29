@@ -46,5 +46,8 @@ test_case() {
 
 make -C "$ROOT_PATH" build
 > $RESULT_OUTFILE
-test_option_combinations src Makefile
-test_option_combinations src
+
+test_option_combinations recursive
+test_option_combinations basic
+test_option_combinations -z
+test_option_combinations basic recursive somefile

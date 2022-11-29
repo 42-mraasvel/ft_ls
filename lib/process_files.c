@@ -47,18 +47,6 @@ ResultType process_files(VecFile* files, Arguments* args) {
 	return Success;
 }
 
-#ifndef __linux__
-static bool contains_directory(VecFile* files, Arguments* args) {
-	for (int i = 0; i < (int)files->length; i++) {
-		File* file = &files->table[i];
-		if (file->type == Directory && !is_special_file(file)) {
-			return true;
-		}
-	}
-	return false;
-}
-#endif
-
 ResultType process_directory(File* dir, Arguments* args, bool always_print_name) {
 	// TODO: review assertion choice
 	assert(dir->type == Directory);
@@ -92,7 +80,7 @@ ResultType process_directory(File* dir, Arguments* args, bool always_print_name)
 #ifdef __linux__
 	if (always_print_name || args->options['R']) {
 #else
-	if (always_print_name || (contains_directory(files, args) && args->options['R'])) {
+	if (always_print_name) {
 #endif
 		printf("%s:\n", dir_path);
 	}

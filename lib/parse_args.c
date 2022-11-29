@@ -7,8 +7,8 @@ static ResultType parse_options(Arguments* args, const char* options, const char
 	for (int i = 0; options[i] != '\0'; i++) {
 		unsigned int option = (unsigned char)options[i];
 		if (ft_strchr(allowed_options, options[i]) == NULL) {
-			format_error("invalid option -- '%c'\n", options[i]);
-			fprintf(stderr, "Try 'ls --help' for more information\n");
+			format_error("invalid option -- %c\n", options[i]);
+			fprintf(stderr, "usage: ls [-@ABCFGHILOPRSTUWabcdefghiklmnopqrstuvwxy1%%,] [--color=when] [-D format] [file ...]\n");
 			return ArgumentError;
 		}
 		args->options[option] = true;
