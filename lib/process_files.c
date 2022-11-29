@@ -77,7 +77,7 @@ ResultType process_directory(File* dir, Arguments* args, bool always_print_name)
 	while ((entry = readdir(dirp))) {
 		File file;
 		if (file_from_dirent(dir_path, entry, &file) != Success) {
-			format_error("cannot access file '%s': %s\n", entry->d_name, strerror(errno));
+			format_error("%s: %s\n", entry->d_name, strerror(errno));
 			continue;
 		} else if (!should_handle_file(&file, args)) {
 			file_destroy(&file);

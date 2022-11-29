@@ -13,7 +13,7 @@ ResultType partition(Arguments* args, VecStr* input, VecFile* files, VecFile* di
 		File file;
 		ResultType result = file_from_path(path, &file);
 		if (result == StatError) {
-			format_error("cannot access '%s': %s\n", path, strerror(errno));
+			format_error("%s: %s\n", path, strerror(errno));
 			continue;
 		} else if (result != Success) {
 			return result;

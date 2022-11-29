@@ -1,6 +1,11 @@
 #!/bin/bash
 ROOT_PATH='..'
-FT_LS_PATH="$ROOT_PATH/debug/src/ft_ls"
+if [ -z "$FT_LS_PATH" ];
+then
+	FT_LS_PATH="$ROOT_PATH/debug/src/ft_ls"
+else
+	FT_LS_PATH="$ROOT_PATH/$FT_LS_PATH"
+fi
 
 ft_ls="${FT_LS_PATH}"
 LS_OUTFILE='ls_out.txt'
@@ -26,11 +31,11 @@ test_case() {
 	then
 		echo -e '[' $FAIL "Failed" $ENDC "]: 'ls $@'"
 		echo "[ERROR]: 'ls $@'" >> $RESULT_OUTFILE
-		echo "[ERROR]: $(cmp $LS_OUTFILE $FT_LS_OUTFILE) >> $RESULT_OUTFILE
+		echo "[ERROR]: $(cmp $LS_OUTFILE $FT_LS_OUTFILE)" >> $RESULT_OUTFILE
 		echo "[INFO]: 'ls -1 $@'" >> $RESULT_OUTFILE
 		cat "$LS_OUTFILE" >> $RESULT_OUTFILE
 		echo "[INFO]: '${ft_ls} $@'" >> $RESULT_OUTFILE
-		cat "$FT_LS_OUTFILE >> $RESULT_OUTFILE
+		cat "$FT_LS_OUTFILE" >> $RESULT_OUTFILE
 		echo "[INFO]: DIFF" >> $RESULT_OUTFILE
 		diff $LS_OUTFILE $FT_LS_OUTFILE >> $RESULT_OUTFILE
 		echo >> $RESULT_OUTFILE

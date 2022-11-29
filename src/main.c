@@ -48,8 +48,16 @@ static ResultType process_arguments(Arguments* args) {
 
 static char* program_name;
 
+static int sort_filenames(char** a, char** b) {
+	return ft_strcmp_ignore_case(*a, *b);
+}
+
 int main(int argc, char* argv[]) {
+#ifdef TEST_BUILD
+	set_program_name("ls");
+#else
 	set_program_name(argv[0]);
+#endif
 	int result = Success;
 	Arguments args;
 	ResultType parse_result = parse_args(&args, argc, argv, ALLOWED_OPTIONS);
@@ -60,12 +68,14 @@ int main(int argc, char* argv[]) {
 	if (args.files->length == 0) {
 		File cwd;
 		if (file_from_path(".", &cwd) != Success) {
-			format_error("cannot access '%s': %s\n", ".", strerror(errno));
+			format_error("%s: %s\n", ".", strerror(errno));
 			return GeneralError;
 		}
 		result = process_directory(&cwd, &args, false);
 		file_destroy(&cwd);
 	} else {
+		// sort filenames for error message on macOS being in sorted order
+		vecstr_sort_unstable_by(args.files, sort_filenames);
 		result = process_arguments(&args);
 	}
 	args_destroy(&args);

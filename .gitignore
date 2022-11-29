@@ -56,3 +56,4 @@ dkms.conf
 /debug
 .vscode
 /libft
+/build_test

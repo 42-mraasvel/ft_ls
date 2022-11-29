@@ -1,9 +1,14 @@
 ifdef RELEASE
-BUILD_DIR := target
-CMAKE_FLAGS := -DCMAKE_BUILD_TYPE=Release
+BUILD_DIR = target
+CMAKE_FLAGS = -DCMAKE_BUILD_TYPE=Release
 else
-BUILD_DIR := debug
-CMAKE_FLAGS := -DCMAKE_BUILD_TYPE=Debug
+	ifdef TEST_BUILD
+		BUILD_DIR = build_test
+		CMAKE_FLAGS = -DCMAKE_BUILD_TYPE=Debug -DTestBuild=1
+	else
+		BUILD_DIR = debug
+		CMAKE_FLAGS = -DCMAKE_BUILD_TYPE=Debug
+	endif
 endif
 
 NAME = $(BUILD_DIR)/src/ft_ls
@@ -18,13 +23,19 @@ build: $(BUILD_DIR)
 $(BUILD_DIR):
 	cmake -B $(BUILD_DIR) $(CMAKE_FLAGS) -S .
 
-test: build
+test:
+	$(MAKE) run_test TEST_BUILD=1
+
+run_test: build
 	$(TEST_NAME)
 
 system_test:
-	cd system_test && bash test_ls.sh
+	$(MAKE) run_system_test TEST_BUILD=1
+
+run_system_test: build
+	cd system_test && FT_LS_PATH="$(NAME)" bash test_ls.sh
 
 release:
 	$(MAKE) RELEASE=1
 
-.PHONY: run build release system_test
+.PHONY: run build release test system_test
