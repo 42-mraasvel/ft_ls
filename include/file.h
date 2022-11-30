@@ -37,5 +37,7 @@ ResultType file_from_dirent(const char* parent, struct dirent* entry, File* file
 void file_destroy(File* file);
 void print_file(File* file);
 void file_display(File* file);
+void file_display_long(File* file);
+size_t file_sizes(VecFile* files);
 
 #endif /* FILE_H */

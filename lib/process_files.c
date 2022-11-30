@@ -34,7 +34,11 @@ ResultType process_files(VecFile* files, Arguments* args) {
 		File* file = &files->table[i];
 		// output file
 		// - output depends on options: -l
-		file_display(file);
+		if (args->options['l']) {
+			file_display_long(file);
+		} else {
+			file_display(file);
+		}
 		// add to directories if -R specified and file is a directory which is not `.` or `..`
 		if (args->options['R'] && file->type == Directory && !is_special_file(file)) {
 			if (vecfile_push_back(nested_directories, *file) == -1) {
@@ -85,6 +89,10 @@ ResultType process_directory(File* dir, Arguments* args, bool always_print_name)
 		printf("%s:\n", dir_path);
 	}
 	sort_files(files, args);
+	if (args->options['l']) {
+		size_t n = file_sizes(files);
+		printf("total %lu\n", n);
+	}
 	ResultType result = process_files(files, args);
 	vecfile_destroy_with(files, file_destroy);
 	return result;

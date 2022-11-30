@@ -13,7 +13,7 @@ FT_LS_OUTFILE='ft_ls_out.txt'
 RESULT_OUTFILE='result.log'
 
 test_option_combinations() {
-	OPTIONS=("-r" "-R" "-t" "-a" "-rR" "-rt" "-ra" "-Rt" "-Ra" "-ta" "-rRt" "-rRa" "-rta" "-Rta" "-rRta")
+	OPTIONS=("-l" "-r" "-R" "-t" "-a" "-lr" "-lR" "-lt" "-la" "-rR" "-rt" "-ra" "-Rt" "-Ra" "-ta" "-lrR" "-lrt" "-lra" "-lRt" "-lRa" "-lta" "-rRt" "-rRa" "-rta" "-Rta" "-lrRt" "-lrRa" "-lrta" "-lRta" "-rRta" "-lrRta")
 	for option in "${OPTIONS[@]}"
 	do
 		test_case "${option}" $@
@@ -49,5 +49,5 @@ make -C "$ROOT_PATH" build
 
 test_option_combinations recursive
 test_option_combinations basic
-test_option_combinations -z
 test_option_combinations basic recursive somefile
+# test_option_combinations -z

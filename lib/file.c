@@ -6,6 +6,8 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <dirent.h>
+#include <pwd.h>
+#include <grp.h>
 
 // invariant: stat info is initialized
 static FileType get_filetype(File* file) {
@@ -35,7 +37,7 @@ ResultType file_from_path(const char* path, File* file) {
 		return StatError;
 	}
 	file->name = malloc_check(ft_strdup(path));
-	file->path = NULL;
+	file->path = malloc_check(string_from(path));
 	file->type = get_filetype(file);
 	return Success;
 }
@@ -78,21 +80,36 @@ static const char* filetype_to_string(FileType type) {
 	return "";
 }
 
+static char filetype_to_mode(FileType type) {
+	switch (type) {
+		case BlockDevice:
+			return 'b';
+		case CharacterDevice:
+			return 'c';
+		case Directory:
+			return 'd';
+		case SymbolicLink:
+			return 'l';
+		case Socket:
+			return 's';
+		case Fifo:
+			return 'p';
+		default:
+			return '-';
+	}
+}
+
 bool is_special_file(File* a) {
 	// a == "." || a == ".."
 	return ft_strcmp(a->name, ".") == 0 || ft_strcmp(a->name, "..") == 0;
 }
 
 static const char* get_file_name(File* a) {
-	if (ft_starts_with(a->name, ".") && !is_special_file(a)) {
-		return a->name + 1;
-	} else {
-		return a->name;
-	}
+	return a->name;
 }
 
 int filecmp_by_name(File* a, File* b) {
-	return ft_strcmp_ignore_case(get_file_name(a), get_file_name(b));
+	return ft_strcmp(get_file_name(a), get_file_name(b));
 }
 
 int filecmp_by_name_reverse(File* a, File* b) {
@@ -136,8 +153,91 @@ void print_file(File* file) {
 	printf("\n");
 }
 
+size_t file_sizes(VecFile* files) {
+	size_t n = 0;
+	for (int i = 0; i < (int)files->length; i++) {
+		File* file = &files->table[i];
+		n += file->info.st_blocks;
+	}
+	return n;
+}
+
 void file_display(File* file) {
 	printf("%s", file->name);
+}
+
+/* Long Listing Format */
+
+static char owner_exec_mode(File* file) {
+	if (file->info.st_mode & S_ISUID) {
+		return file->info.st_mode & S_IXUSR ? 's' : 'S';
+	} else if (file->info.st_mode & S_IXUSR) {
+		return 'x';
+	} else {
+		return '-';
+	}
+}
+
+static char group_exec_mode(File* file) {
+	if (file->info.st_mode & S_ISGID) {
+		return file->info.st_mode & S_IXGRP ? 's' : 'S';
+	} else if (file->info.st_mode & S_IXGRP) {
+		return 'x';
+	} else {
+		return '-';
+	}
+}
+
+static char other_exec_mode(File* file) {
+	if (file->info.st_mode & S_ISVTX) {
+		return file->info.st_mode & S_IXOTH ? 't' : 'T';
+	} else if (file->info.st_mode & S_IXOTH) {
+		return 'x';
+	} else {
+		return '-';
+	}
+}
+
+static void print_permissions(File* file) {
+	printf("%c%c%c%c%c%c%c%c%c",
+		file->info.st_mode & S_IRUSR ? 'r' : '-',
+		file->info.st_mode & S_IWUSR ? 'w' : '-',
+		owner_exec_mode(file),
+		file->info.st_mode & S_IRGRP ? 'r' : '-',
+		file->info.st_mode & S_IWGRP ? 'w' : '-',
+		group_exec_mode(file),
+		file->info.st_mode & S_IROTH ? 'r' : '-',
+		file->info.st_mode & S_IWOTH ? 'w' : '-',
+		other_exec_mode(file)
+	);
+}
+
+static void print_owner(File* file) {
+	struct passwd* pwd = getpwuid(file->info.st_uid);
+	if (!pwd || !pwd->pw_name) {
+		printf("%d", file->info.st_uid);
+	} else {
+		printf("%s", pwd->pw_name);
+	}
+}
+
+static void print_group(File* file) {
+	struct group* grp = getgrgid(file->info.st_gid);
+	if (!grp || !grp->gr_name) {
+		printf("%d", file->info.st_gid);
+	} else {
+		printf("%s", grp->gr_name);
+	}
+}
+
+void file_display_long(File* file) {
+	printf("%c", filetype_to_mode(file->type));
+	print_permissions(file);
+	printf("  %d ", file->info.st_nlink);
+	print_owner(file);
+	printf(" ");
+	print_group(file);
+	printf(" %s", file->name);
 }
 
 MONOVEC_DEFINITIONS(File, VecFile, vecfile);

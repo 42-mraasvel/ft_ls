@@ -49,7 +49,7 @@ static ResultType process_arguments(Arguments* args) {
 static char* program_name;
 
 static int sort_filenames(char** a, char** b) {
-	return ft_strcmp_ignore_case(*a, *b);
+	return ft_strcmp(*a, *b);
 }
 
 int main(int argc, char* argv[]) {

@@ -14,11 +14,14 @@ endif
 NAME = $(BUILD_DIR)/src/ft_ls
 TEST_NAME = $(BUILD_DIR)/test/test
 
-run: build
-	$(NAME)
+EXAMPLE_DIR := examples
+EXAMPLE_NAME := permissions
 
 build: $(BUILD_DIR)
 	cmake --build $(BUILD_DIR)
+
+run: build
+	$(NAME)
 
 $(BUILD_DIR):
 	cmake -B $(BUILD_DIR) $(CMAKE_FLAGS) -S .
@@ -38,4 +41,7 @@ run_system_test: build
 release:
 	$(MAKE) RELEASE=1
 
-.PHONY: run build release test system_test
+examples: build
+	$(BUILD_DIR)/$(EXAMPLE_DIR)/$(EXAMPLE_NAME)
+
+.PHONY: run build release test system_test examples
