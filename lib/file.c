@@ -8,6 +8,7 @@
 #include <dirent.h>
 #include <pwd.h>
 #include <grp.h>
+#include <time.h>
 
 // invariant: stat info is initialized
 static FileType get_filetype(File* file) {
@@ -198,6 +199,10 @@ static char other_exec_mode(File* file) {
 	}
 }
 
+static void print_filemode(File* file) {
+	printf("%c", filetype_to_mode(file->type));
+}
+
 static void print_permissions(File* file) {
 	printf("%c%c%c%c%c%c%c%c%c",
 		file->info.st_mode & S_IRUSR ? 'r' : '-',
@@ -212,8 +217,13 @@ static void print_permissions(File* file) {
 	);
 }
 
+static void print_nlinks(File* file) {
+	printf(" %d", file->info.st_nlink);
+}
+
 static void print_owner(File* file) {
 	struct passwd* pwd = getpwuid(file->info.st_uid);
+	printf(" ");
 	if (!pwd || !pwd->pw_name) {
 		printf("%d", file->info.st_uid);
 	} else {
@@ -222,6 +232,7 @@ static void print_owner(File* file) {
 }
 
 static void print_group(File* file) {
+	printf(" ");
 	struct group* grp = getgrgid(file->info.st_gid);
 	if (!grp || !grp->gr_name) {
 		printf("%d", file->info.st_gid);
@@ -230,14 +241,40 @@ static void print_group(File* file) {
 	}
 }
 
-void file_display_long(File* file) {
-	printf("%c", filetype_to_mode(file->type));
-	print_permissions(file);
-	printf("  %d ", file->info.st_nlink);
-	print_owner(file);
+static void print_filesize(File* file) {
+	printf(" %lld", file->info.st_size);
+}
+
+static void print_date_last_modified(File* file) {
+	// 6 months
 	printf(" ");
+	// MONTH DAY [ YEARS if last_modified > 6 months ELSE HOUR:MINUTE:SECOND ]
+
+	// "DDD MMM DD HH:MM:SS YYYY\n\0"
+	char* date = ctime(&file->info.st_mtimespec.tv_sec);
+	printf("%.3s %.2s ", date + 4, date + 8);
+
+	// print year if more than 6 months ago, otherwise print HH:MM:SS
+	time_t t = time(NULL);
+	const long SIX_MONTHS = 60 * 60 * 24 * 31 * 6;
+	if (t - SIX_MONTHS > file->info.st_mtimespec.tv_sec) {
+		printf("%.4s", date + 20);
+	} else {
+		printf("%.5s", date + 11);
+	}
+	printf(" ");
+}
+
+void file_display_long(File* file) {
+	print_filemode(file);
+	print_permissions(file);
+	// print extended attributes
+	print_nlinks(file);
+	print_owner(file);
 	print_group(file);
-	printf(" %s", file->name);
+	print_filesize(file);
+	print_date_last_modified(file);
+	file_display(file);
 }
 
 MONOVEC_DEFINITIONS(File, VecFile, vecfile);
