@@ -64,7 +64,6 @@ int main(int argc, char* argv[]) {
 	}
 
 	printf("File: ");
-	file_display_long(&file);
 	printf("\n");
 
 	print_permissions(&file);

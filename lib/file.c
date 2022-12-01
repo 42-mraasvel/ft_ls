@@ -40,6 +40,7 @@ ResultType file_from_path(const char* path, File* file) {
 	file->name = malloc_check(ft_strdup(path));
 	file->path = malloc_check(string_from(path));
 	file->type = get_filetype(file);
+	file->date = NULL;
 	return Success;
 }
 
@@ -51,6 +52,7 @@ ResultType file_from_dirent(const char* parent, struct dirent* entry, File* file
 		return StatError;
 	}
 	file->type = get_filetype(file);
+	file->date = NULL;
 	return Success;
 }
 
@@ -169,6 +171,13 @@ void file_display(File* file) {
 
 /* Long Listing Format */
 
+MONOVEC_DEFINITIONS(File, VecFile, vecfile);
+MONOVEC_DEFINITIONS(int, VecInt, vecint);
+MONOVEC_DEFINITIONS(String*, VecString, vecstring);
+MONOVEC_DEFINITIONS(LongListingRow, VecRow, vecrow);
+
+typedef String* (*ColumnStringMaker)(File*);
+
 static char owner_exec_mode(File* file) {
 	if (file->info.st_mode & S_ISUID) {
 		return file->info.st_mode & S_IXUSR ? 's' : 'S';
@@ -199,94 +208,9 @@ static char other_exec_mode(File* file) {
 	}
 }
 
-static void print_filemode(File* file) {
-	printf("%c", filetype_to_mode(file->type));
-}
-
-static void print_permissions(File* file) {
-	printf("%c%c%c%c%c%c%c%c%c",
-		file->info.st_mode & S_IRUSR ? 'r' : '-',
-		file->info.st_mode & S_IWUSR ? 'w' : '-',
-		owner_exec_mode(file),
-		file->info.st_mode & S_IRGRP ? 'r' : '-',
-		file->info.st_mode & S_IWGRP ? 'w' : '-',
-		group_exec_mode(file),
-		file->info.st_mode & S_IROTH ? 'r' : '-',
-		file->info.st_mode & S_IWOTH ? 'w' : '-',
-		other_exec_mode(file)
-	);
-}
-
-static void print_nlinks(File* file) {
-	printf(" %d", file->info.st_nlink);
-}
-
-static void print_owner(File* file) {
-	struct passwd* pwd = getpwuid(file->info.st_uid);
-	printf(" ");
-	if (!pwd || !pwd->pw_name) {
-		printf("%d", file->info.st_uid);
-	} else {
-		printf("%s", pwd->pw_name);
-	}
-}
-
-static void print_group(File* file) {
-	printf(" ");
-	struct group* grp = getgrgid(file->info.st_gid);
-	if (!grp || !grp->gr_name) {
-		printf("%d", file->info.st_gid);
-	} else {
-		printf("%s", grp->gr_name);
-	}
-}
-
-static void print_filesize(File* file) {
-	printf(" %lld", file->info.st_size);
-}
-
-static void print_date_last_modified(File* file) {
-	// 6 months
-	printf(" ");
-	// MONTH DAY [ YEARS if last_modified > 6 months ELSE HOUR:MINUTE:SECOND ]
-
-	// "DDD MMM DD HH:MM:SS YYYY\n\0"
-	char* date = ctime(&file->info.st_mtimespec.tv_sec);
-	printf("%.3s %.2s ", date + 4, date + 8);
-
-	// print year if more than 6 months ago, otherwise print HH:MM:SS
-	time_t t = time(NULL);
-	const long SIX_MONTHS = 60 * 60 * 24 * 31 * 6;
-	if (t - SIX_MONTHS > file->info.st_mtimespec.tv_sec) {
-		printf("%.4s", date + 20);
-	} else {
-		printf("%.5s", date + 11);
-	}
-	printf(" ");
-}
-
-void file_display_long(File* file) {
-	print_filemode(file);
-	print_permissions(file);
-	// print extended attributes
-	print_nlinks(file);
-	print_owner(file);
-	print_group(file);
-	print_filesize(file);
-	print_date_last_modified(file);
-	file_display(file);
-}
-
-MONOVEC_DEFINITIONS(File, VecFile, vecfile);
-MONOVEC_DEFINITIONS(int, VecInt, vecint);
-MONOVEC_DEFINITIONS(String*, VecString, vecstring);
-MONOVEC_DEFINITIONS(LongListingRow, VecRow, vecrow);
-
-typedef String* (*ColumnStringMaker)(File*);
-
 static String* string_mode(File* file) {
 	// TODO: add extended attributes
-	return malloc_check(string_format("%c%c%c%c%c%c%c%c%c%c",
+	return string_format("%c%c%c%c%c%c%c%c%c%c%c",
 		filetype_to_mode(file->type),
 		file->info.st_mode & S_IRUSR ? 'r' : '-',
 		file->info.st_mode & S_IWUSR ? 'w' : '-',
@@ -296,40 +220,90 @@ static String* string_mode(File* file) {
 		group_exec_mode(file),
 		file->info.st_mode & S_IROTH ? 'r' : '-',
 		file->info.st_mode & S_IWOTH ? 'w' : '-',
-		other_exec_mode(file)
-	));
+		other_exec_mode(file),
+		' '
+	);
 }
 
 static String* string_nlinks(File* file) {
-	return malloc_check(string_format("%d", file->info.st_nlink));
+	return string_format("%d", file->info.st_nlink);
 }
 
-static void long_listing_fill_row(LongListingRow* row, File* file) {
-	row->columns = malloc_check(vecstring_construct(10));
+static String* string_owner_name(File* file) {
+	struct passwd* pwd = getpwuid(file->info.st_uid);
+	if (!pwd || !pwd->pw_name) {
+		return string_format("%d", file->info.st_uid);
+	} else {
+		return string_format("%s", pwd->pw_name);
+	}
+}
 
+static String* string_group_name(File* file) {
+	struct group* grp = getgrgid(file->info.st_gid);
+	if (!grp || !grp->gr_name) {
+		return string_format(" %d", file->info.st_gid);
+	} else {
+		return string_format(" %s", grp->gr_name);
+	}
+}
+
+static String* string_filesize(File* file) {
+	return string_format(" %d", (int)file->info.st_size);
+}
+
+static String* string_month(File* file) {
+	return string_format("%.3s", file->date + 4);
+}
+
+static String* string_day(File* file) {
+	return string_format("%.2s", file->date + 8);
+}
+
+static String* string_time(File* file) {
+	time_t t = time(NULL);
+	const long SIX_MONTHS = 60 * 60 * 24 * 31 * 6;
+	if (t - SIX_MONTHS > file->info.st_mtimespec.tv_sec) {
+		return string_format("%.4s", file->date + 20);
+	} else {
+		return string_format("%.5s", file->date + 11);
+	}
+}
+
+static String* string_filename(File* file) {
+	return string_format(" %s", file->name);
+}
+
+static LongListingRow long_listing_row_create(File* file) {
 	static const ColumnStringMaker makers[] = {
-		[MODE] = string_mode,
-		[NLINKS] = string_nlinks
-		// OWNER_NAME,
-		// GROUP_NAME,
-		// FILE_SIZE,
-		// DATE_MONTH,
-		// DATE_DAY,
-		// DATE_TIME, // Year or HH:MM
-		// FILE_NAME
+		string_mode,
+		string_nlinks,
+		string_owner_name,
+		string_group_name,
+		string_filesize,
+		string_month,
+		string_day,
+		string_time,
+		string_filename
 	};
 
+	LongListingRow row;
+	file->date = ctime(&file->info.st_mtimespec.tv_sec);
+	row.columns = malloc_check(vecstring_construct(10));
 	for (int i = 0; i < (int)(sizeof(makers) / sizeof(ColumnStringMaker)); i++) {
-		String* s = (makers[i])(file);
-		if (vecstring_push_back(row->columns, s) == -1) {
+		String* s = malloc_check((makers[i])(file));
+		if (vecstring_push_back(row.columns, s) == -1) {
 			abort_program("malloc");
 		}
 	}
+	return row;
 }
 
 static void long_listing_fill_rows(LongListing* listing, VecFile* files) {
 	for (int i = 0; i < (int)files->length; i++) {
-		long_listing_fill_row(&listing->rows->table[i], &files->table[i]);
+		LongListingRow row = long_listing_row_create(&files->table[i]);
+		if (vecrow_push_back(listing->rows, row) == -1) {
+			abort_program("malloc");
+		}
 	}
 }
 
@@ -338,7 +312,8 @@ static void long_listing_fill_padding(LongListing* listing) {
 	for (int column = 0; column < columns; column++) {
 		int max = 0;
 		for (int row = 0; row < (int)listing->rows->length; row++) {
-			max = ft_max(max, listing->rows->table[row].columns->table[column]->chars->length);
+			int len = (int)string_length(listing->rows->table[row].columns->table[column]);
+			max = ft_max(max, len);
 		}
 		if (vecint_push_back(listing->padding, max) == -1) {
 			abort_program("malloc");
@@ -379,11 +354,14 @@ void long_listing_destroy(LongListing* listing) {
 }
 
 void long_listing_print(LongListing* listing, int index) {
-	for (int i = 0; i < (int)listing->rows->length; i++) {
-		LongListingRow* row = &listing->rows->table[i];
-		int minimum_field_width = listing->padding->table[i];
-		for (int col = 0; col < (int)row->columns->length; col++) {
-			printf("%*s", minimum_field_width, string_cstr(row->columns->table[col]));
+	LongListingRow* row = &listing->rows->table[index];
+	for (int col = 0; col < (int)row->columns->length; col++) {
+		int minimum_field_width = listing->padding->table[col];
+		if (col >= FILE_NAME) {
+			minimum_field_width = 0;
+		} else if (col > 0) {
+			minimum_field_width += 1;
 		}
+		printf("%*s", minimum_field_width, string_cstr(row->columns->table[col]));
 	}
 }
