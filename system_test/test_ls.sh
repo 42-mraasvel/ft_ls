@@ -7,6 +7,10 @@ else
 	FT_LS_PATH="$ROOT_PATH/$FT_LS_PATH"
 fi
 
+TEST_COUNT='0'
+TEST_PASSED='0'
+TEST_FAILED='0'
+
 ft_ls="${FT_LS_PATH}"
 LS_OUTFILE='ls_out.txt'
 FT_LS_OUTFILE='ft_ls_out.txt'
@@ -21,14 +25,17 @@ test_option_combinations() {
 }
 
 FAIL='\033[91m'
+PASS='\033[32m'
 ENDC='\033[0m'
 
 test_case() {
+	TEST_COUNT=$((TEST_COUNT+1))
 	ls -1 $@ &> $LS_OUTFILE
 	"${ft_ls}" $@ &> $FT_LS_OUTFILE
 	cmp -s $LS_OUTFILE $FT_LS_OUTFILE
 	if [ "$?" -eq 1 ];
 	then
+		TEST_FAILED=$((TEST_FAILED+1))
 		echo -e '[' $FAIL "Failed" $ENDC "]: 'ls $@'"
 		echo "[ERROR]: 'ls $@'" >> $RESULT_OUTFILE
 		echo "[ERROR]: $(cmp $LS_OUTFILE $FT_LS_OUTFILE)" >> $RESULT_OUTFILE
@@ -40,6 +47,9 @@ test_case() {
 		diff $LS_OUTFILE $FT_LS_OUTFILE >> $RESULT_OUTFILE
 		echo >> $RESULT_OUTFILE
 		return 1
+	else
+		echo -e '[' $PASS "Passed" $ENDC "]: 'ls $@'"
+		TEST_PASSED=$((TEST_PASSED+1))
 	fi
 	return 0
 }
@@ -53,3 +63,6 @@ test_option_combinations basic recursive somefile
 test_option_combinations -z
 test_option_combinations this_is_a_symlink
 test_option_combinations this_is_a_symlink ./basic ./recursive
+
+echo "Passed: $TEST_PASSED / $TEST_COUNT"
+echo "Failed: $TEST_FAILED / $TEST_COUNT"

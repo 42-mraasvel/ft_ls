@@ -400,11 +400,14 @@ void long_listing_destroy(LongListing* listing) {
 void long_listing_print(LongListing* listing, int index) {
 	LongListingRow* row = &listing->rows->table[index];
 	for (int col = 0; col < (int)row->columns->length; col++) {
-		int minimum_field_width = listing->padding->table[col];
-		if (col >= FILE_NAME) {
-			minimum_field_width = 0;
-		} else if (col > 0) {
+		int minimum_field_width = 0;
+		if (col > 0) {
 			minimum_field_width += 1;
+		}
+		if (col < FILE_NAME) {
+			minimum_field_width += listing->padding->table[col];
+		} else {
+			minimum_field_width = 0;
 		}
 		printf("%*s", minimum_field_width, string_cstr(row->columns->table[col]));
 	}
