@@ -29,13 +29,17 @@ ResultType process_files(VecFile* files, Arguments* args) {
 	if (files->length == 0) {
 		return Success;
 	}
+	LongListing* listing = NULL;
+	if (args->options['l']) {
+		listing = create_long_listing(files);
+	}
 	VecFile* nested_directories = malloc_check(vecfile_construct(0));
 	for (int i = 0; i < (int)files->length; i++) {
 		File* file = &files->table[i];
 		// output file
 		// - output depends on options: -l
 		if (args->options['l']) {
-			file_display_long(file);
+			long_listing_print(listing, i);
 		} else {
 			file_display(file);
 		}
@@ -47,6 +51,7 @@ ResultType process_files(VecFile* files, Arguments* args) {
 		}
 		printf("\n");
 	}
+	long_listing_destroy(listing);
 	process_directories(nested_directories, args);
 	return Success;
 }

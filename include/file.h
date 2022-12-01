@@ -26,19 +26,19 @@ typedef struct File {
 } File;
 
 typedef enum LongListingIndex {
-	MODE,
-	NLINKS,
-	OWNER_NAME,
-	GROUP_NAME,
-	FILE_SIZE,
-	DATE_MONTH,
-	DATE_DAY,
-	DATE_TIME, // Year or HH:MM
-	FILE_NAME
+	MODE = 0,
+	NLINKS = 1,
+	OWNER_NAME = 2,
+	GROUP_NAME = 3,
+	FILE_SIZE = 4,
+	DATE_MONTH = 5,
+	DATE_DAY = 6,
+	DATE_TIME = 7, // Year or HH:MM
+	FILE_NAME = 8
 } LongListingIndex;
 
 MONOVEC_DECLARATION(int, VecInt, vecint);
-MONOVEC_DECLARATION(String, VecString, vecstring);
+MONOVEC_DECLARATION(String*, VecString, vecstring);
 
 typedef struct LongListingRow {
 	VecString* columns;
@@ -57,6 +57,7 @@ typedef struct LongListing {
 
 LongListing* create_long_listing(VecFile* files);
 void long_listing_print(LongListing* listing, int index);
+void long_listing_destroy(LongListing* listing);
 
 void sort_files(VecFile* files, Arguments* args);
 int filecmp_by_name(File* a, File* b);

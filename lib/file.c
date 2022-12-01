@@ -279,5 +279,111 @@ void file_display_long(File* file) {
 
 MONOVEC_DEFINITIONS(File, VecFile, vecfile);
 MONOVEC_DEFINITIONS(int, VecInt, vecint);
-MONOVEC_DEFINITIONS(String, VecString, vecstring);
+MONOVEC_DEFINITIONS(String*, VecString, vecstring);
 MONOVEC_DEFINITIONS(LongListingRow, VecRow, vecrow);
+
+typedef String* (*ColumnStringMaker)(File*);
+
+static String* string_mode(File* file) {
+	// TODO: add extended attributes
+	return malloc_check(string_format("%c%c%c%c%c%c%c%c%c%c",
+		filetype_to_mode(file->type),
+		file->info.st_mode & S_IRUSR ? 'r' : '-',
+		file->info.st_mode & S_IWUSR ? 'w' : '-',
+		owner_exec_mode(file),
+		file->info.st_mode & S_IRGRP ? 'r' : '-',
+		file->info.st_mode & S_IWGRP ? 'w' : '-',
+		group_exec_mode(file),
+		file->info.st_mode & S_IROTH ? 'r' : '-',
+		file->info.st_mode & S_IWOTH ? 'w' : '-',
+		other_exec_mode(file)
+	));
+}
+
+static String* string_nlinks(File* file) {
+	return malloc_check(string_format("%d", file->info.st_nlink));
+}
+
+static void long_listing_fill_row(LongListingRow* row, File* file) {
+	row->columns = malloc_check(vecstring_construct(10));
+
+	static const ColumnStringMaker makers[] = {
+		[MODE] = string_mode,
+		[NLINKS] = string_nlinks
+		// OWNER_NAME,
+		// GROUP_NAME,
+		// FILE_SIZE,
+		// DATE_MONTH,
+		// DATE_DAY,
+		// DATE_TIME, // Year or HH:MM
+		// FILE_NAME
+	};
+
+	for (int i = 0; i < (int)(sizeof(makers) / sizeof(ColumnStringMaker)); i++) {
+		String* s = (makers[i])(file);
+		if (vecstring_push_back(row->columns, s) == -1) {
+			abort_program("malloc");
+		}
+	}
+}
+
+static void long_listing_fill_rows(LongListing* listing, VecFile* files) {
+	for (int i = 0; i < (int)files->length; i++) {
+		long_listing_fill_row(&listing->rows->table[i], &files->table[i]);
+	}
+}
+
+static void long_listing_fill_padding(LongListing* listing) {
+	int columns = listing->rows->table[0].columns->length;
+	for (int column = 0; column < columns; column++) {
+		int max = 0;
+		for (int row = 0; row < (int)listing->rows->length; row++) {
+			max = ft_max(max, listing->rows->table[row].columns->table[column]->chars->length);
+		}
+		if (vecint_push_back(listing->padding, max) == -1) {
+			abort_program("malloc");
+		}
+	}
+}
+
+LongListing* create_long_listing(VecFile* files) {
+	if (files->length == 0) {
+		return NULL;
+	}
+	LongListing* listing = malloc_check(malloc(1 * sizeof(LongListing)));
+	listing->files = files;
+	listing->rows = malloc_check(vecrow_construct(files->length));
+	listing->padding = malloc_check(vecint_construct(files->length));
+	long_listing_fill_rows(listing, files);
+	long_listing_fill_padding(listing);
+	return listing;
+}
+
+static void string_destroy_double(String** s) {
+	string_destroy(*s);
+}
+
+static void long_listing_row_destroy(LongListingRow* row) {
+	if (!row) {
+		return;
+	}
+	vecstring_destroy_with(row->columns, string_destroy_double);
+}
+
+void long_listing_destroy(LongListing* listing) {
+	if (!listing) {
+		return;
+	}
+	vecrow_destroy_with(listing->rows, long_listing_row_destroy);
+	vecint_destroy(listing->padding);
+}
+
+void long_listing_print(LongListing* listing, int index) {
+	for (int i = 0; i < (int)listing->rows->length; i++) {
+		LongListingRow* row = &listing->rows->table[i];
+		int minimum_field_width = listing->padding->table[i];
+		for (int col = 0; col < (int)row->columns->length; col++) {
+			printf("%*s", minimum_field_width, string_cstr(row->columns->table[col]));
+		}
+	}
+}
