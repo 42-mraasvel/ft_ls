@@ -3,6 +3,7 @@
 
 #include "utils.h"
 #include "parse_args.h"
+#include "ft_string.h"
 #include <sys/stat.h>
 #include <dirent.h>
 
@@ -24,8 +25,38 @@ typedef struct File {
 	struct stat info;
 } File;
 
+typedef enum LongListingIndex {
+	MODE,
+	NLINKS,
+	OWNER_NAME,
+	GROUP_NAME,
+	FILE_SIZE,
+	DATE_MONTH,
+	DATE_DAY,
+	DATE_TIME, // Year or HH:MM
+	FILE_NAME
+} LongListingIndex;
 
+MONOVEC_DECLARATION(int, VecInt, vecint);
+MONOVEC_DECLARATION(String, VecString, vecstring);
+
+typedef struct LongListingRow {
+	VecString* columns;
+} LongListingRow;
+
+MONOVEC_DECLARATION(LongListingRow, VecRow, vecrow);
 MONOVEC_DECLARATION(File, VecFile, vecfile);
+
+typedef struct LongListing {
+	VecFile* files;
+	// Vector of rows, each row has a list of columns
+	VecRow* rows;
+	// Vector of min field width (max string len) for each row
+	VecInt* padding;
+} LongListing;
+
+LongListing* create_long_listing(VecFile* files);
+void long_listing_print(LongListing* listing, int index);
 
 void sort_files(VecFile* files, Arguments* args);
 int filecmp_by_name(File* a, File* b);

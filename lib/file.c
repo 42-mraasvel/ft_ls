@@ -278,3 +278,6 @@ void file_display_long(File* file) {
 }
 
 MONOVEC_DEFINITIONS(File, VecFile, vecfile);
+MONOVEC_DEFINITIONS(int, VecInt, vecint);
+MONOVEC_DEFINITIONS(String, VecString, vecstring);
+MONOVEC_DEFINITIONS(LongListingRow, VecRow, vecrow);
