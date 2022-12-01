@@ -56,7 +56,11 @@ static ResultType init_symlink(File* file) {
 
 static ResultType file_check_extended_attributes(File* file) {
 	file->has_extended_attributes = false;
+#ifdef __linux__
+	ssize_t size = listxattr(string_cstr(file->path), NULL, 0);
+#else
 	ssize_t size = listxattr(string_cstr(file->path), NULL, 0, 0);
+#endif
 	if (size < 0) {
 		format_error("listxattr: %s", strerror(errno));
 		file_destroy(file);
@@ -282,7 +286,12 @@ static String* string_day(File* file) {
 static String* string_time(File* file) {
 	time_t t = time(NULL);
 	const long SIX_MONTHS = 60 * 60 * 24 * 31 * 6;
-	if (t - SIX_MONTHS > file->info.st_mtimespec.tv_sec) {
+#ifdef __linux__
+	time_t age = file->info.st_mtime;
+#else
+	time_t age = file->info.st_mtimespec.tv_sec;
+#endif
+	if (t - SIX_MONTHS > age) {
 		return string_format("%.4s", file->date + 20);
 	} else {
 		return string_format("%.5s", file->date + 11);
@@ -311,7 +320,11 @@ static LongListingRow long_listing_row_create(File* file) {
 	};
 
 	LongListingRow row;
+#ifdef __linux
+	file->date = ctime(&file->info.st_mtime);
+#else
 	file->date = ctime(&file->info.st_mtimespec.tv_sec);
+#endif
 	row.columns = malloc_check(vecstring_construct(10));
 	for (int i = 0; i < (int)(sizeof(makers) / sizeof(ColumnStringMaker)); i++) {
 		String* s = malloc_check((makers[i])(file));
@@ -381,6 +394,7 @@ void long_listing_destroy(LongListing* listing) {
 	}
 	vecrow_destroy_with(listing->rows, long_listing_row_destroy);
 	vecint_destroy(listing->padding);
+	free(listing);
 }
 
 void long_listing_print(LongListing* listing, int index) {
