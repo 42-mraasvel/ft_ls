@@ -9,6 +9,8 @@
 #include <pwd.h>
 #include <grp.h>
 #include <time.h>
+#include <errno.h>
+#include <string.h>
 
 // invariant: stat info is initialized
 static FileType get_filetype(File* file) {
@@ -31,56 +33,55 @@ static FileType get_filetype(File* file) {
 	return type;
 }
 
+static ResultType init_symlink(File* file) {
+	if (file->type == SymbolicLink) {
+		ssize_t bufsize = file->info.st_size + 1;
+		if (file->info.st_size == 0) {
+			bufsize = 4096;
+		}
+		file->referenced_name = malloc_check(malloc((bufsize + 1) * sizeof(char)));
+		ssize_t n = readlink(string_cstr(file->path), file->referenced_name, bufsize);
+		if (n < 0) {
+			format_error("cannot access file behind link: %s", strerror(errno));
+			file_destroy(file);
+			return StatError;
+		}
+		file->referenced_name[n] = '\0';
+	} else {
+		file->referenced_name = NULL;
+	}
+	return Success;
+}
+
 // invariant: file is not NULL
 // note: PATH will be NULL in the returned file
 ResultType file_from_path(const char* path, File* file) {
-	if (stat(path, &file->info) == -1) {
+	if (lstat(path, &file->info) == -1) {
 		return StatError;
 	}
 	file->name = malloc_check(ft_strdup(path));
 	file->path = malloc_check(string_from(path));
 	file->type = get_filetype(file);
 	file->date = NULL;
-	return Success;
+	return init_symlink(file);
 }
 
 ResultType file_from_dirent(const char* parent, struct dirent* entry, File* file) {
 	file->name = malloc_check(ft_strdup(entry->d_name));
 	file->path = string_format("%s/%s", parent, file->name);
-	if (stat(string_cstr(file->path), &file->info) == -1) {
+	if (lstat(string_cstr(file->path), &file->info) == -1) {
 		file_destroy(file);
 		return StatError;
 	}
 	file->type = get_filetype(file);
 	file->date = NULL;
-	return Success;
+	return init_symlink(file);
 }
 
 void file_destroy(File* file) {
 	free(file->name);
+	free(file->referenced_name);
 	string_destroy(file->path);
-}
-
-static const char* filetype_to_string(FileType type) {
-	switch (type) {
-		case Unknown:
-			return "Unknown";
-		case Directory:
-			return "Directory";
-		case RegularFile:
-			return "RegularFile";
-		case CharacterDevice:
-			return "CharacterDevice";
-		case BlockDevice:
-			return "BlockDevice";
-		case Fifo:
-			return "Fifo";
-		case SymbolicLink:
-			return "SymbolicLink";
-		case Socket:
-			return "Socket";
-	}
-	return "";
 }
 
 static char filetype_to_mode(FileType type) {
@@ -145,15 +146,6 @@ void sort_files(VecFile* files, Arguments* args) {
 	} else {
 		vecfile_sort_unstable_by(files, filecmp_by_name);
 	}
-}
-
-void print_file(File* file) {
-	printf("File: ");
-	if (file->name) {
-		printf("Path('%s'), ", file->name);
-	}
-	printf("Type('%s')", filetype_to_string(file->type));
-	printf("\n");
 }
 
 size_t file_sizes(VecFile* files) {
@@ -273,6 +265,10 @@ static String* string_filename(File* file) {
 	return string_format(" %s", file->name);
 }
 
+static String* string_symbolic_link(File* file) {
+	return string_format(" -> %s", file->referenced_name);
+}
+
 static LongListingRow long_listing_row_create(File* file) {
 	static const ColumnStringMaker makers[] = {
 		string_mode,
@@ -295,6 +291,12 @@ static LongListingRow long_listing_row_create(File* file) {
 			abort_program("malloc");
 		}
 	}
+	if (file->type == SymbolicLink) {
+		String* s = malloc_check(string_symbolic_link(file));
+		if (vecstring_push_back(row.columns, s) == -1) {
+			abort_program("malloc");
+		}
+	}
 	return row;
 }
 
@@ -309,7 +311,7 @@ static void long_listing_fill_rows(LongListing* listing, VecFile* files) {
 
 static void long_listing_fill_padding(LongListing* listing) {
 	int columns = listing->rows->table[0].columns->length;
-	for (int column = 0; column < columns; column++) {
+	for (int column = 0; column < columns && column < FILE_NAME; column++) {
 		int max = 0;
 		for (int row = 0; row < (int)listing->rows->length; row++) {
 			int len = (int)string_length(listing->rows->table[row].columns->table[column]);

@@ -32,10 +32,10 @@ test_case() {
 		echo -e '[' $FAIL "Failed" $ENDC "]: 'ls $@'"
 		echo "[ERROR]: 'ls $@'" >> $RESULT_OUTFILE
 		echo "[ERROR]: $(cmp $LS_OUTFILE $FT_LS_OUTFILE)" >> $RESULT_OUTFILE
-		echo "[INFO]: 'ls -1 $@'" >> $RESULT_OUTFILE
-		cat "$LS_OUTFILE" >> $RESULT_OUTFILE
-		echo "[INFO]: '${ft_ls} $@'" >> $RESULT_OUTFILE
-		cat "$FT_LS_OUTFILE" >> $RESULT_OUTFILE
+		# echo "[INFO]: 'ls -1 $@'" >> $RESULT_OUTFILE
+		# cat "$LS_OUTFILE" >> $RESULT_OUTFILE
+		# echo "[INFO]: '${ft_ls} $@'" >> $RESULT_OUTFILE
+		# cat "$FT_LS_OUTFILE" >> $RESULT_OUTFILE
 		echo "[INFO]: DIFF" >> $RESULT_OUTFILE
 		diff $LS_OUTFILE $FT_LS_OUTFILE >> $RESULT_OUTFILE
 		echo >> $RESULT_OUTFILE
@@ -50,4 +50,6 @@ make -C "$ROOT_PATH" build
 test_option_combinations recursive
 test_option_combinations basic
 test_option_combinations basic recursive somefile
-# test_option_combinations -z
+test_option_combinations -z
+test_option_combinations this_is_a_symlink
+test_option_combinations this_is_a_symlink ./basic ./recursive

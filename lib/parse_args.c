@@ -45,19 +45,3 @@ ResultType parse_args(Arguments* args, int argc, char *argv[], const char* allow
 void args_destroy(Arguments* ptr) {
 	vecstr_destroy(ptr->files);
 }
-
-void print_args(Arguments* args) {
-	printf("-- Arguments --\n");
-	printf("Files: [ ");
-	for (int i = 0; i < (int)args->files->length; i++) {
-		printf("`%s`, ", args->files->table[i]);
-	}
-	printf(" ]\n");
-	printf("Options: [ ");
-	for (int i = 0; i < 255; i++) {
-		if (args->options[i]) {
-			printf("%c, ", (unsigned char)i);
-		}
-	}
-	printf(" ]\n-- End Arguments --\n");
-}

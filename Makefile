@@ -15,7 +15,7 @@ NAME = $(BUILD_DIR)/src/ft_ls
 TEST_NAME = $(BUILD_DIR)/test/test
 
 EXAMPLE_DIR := examples
-EXAMPLE_NAME := permissions
+EXAMPLE_NAME := symlink
 
 build: $(BUILD_DIR)
 	cmake --build $(BUILD_DIR)

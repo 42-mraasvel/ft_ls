@@ -24,6 +24,7 @@ typedef struct File {
 	String* path;
 	struct stat info;
 	char* date;
+	char* referenced_name;
 } File;
 
 typedef enum LongListingIndex {
@@ -68,7 +69,6 @@ bool is_special_file(File* a);
 ResultType file_from_path(const char* path, File* out);
 ResultType file_from_dirent(const char* parent, struct dirent* entry, File* file);
 void file_destroy(File* file);
-void print_file(File* file);
 void file_display(File* file);
 size_t file_sizes(VecFile* files);
 

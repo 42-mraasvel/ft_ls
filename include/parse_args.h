@@ -14,6 +14,5 @@ typedef struct Arguments {
 
 ResultType parse_args(Arguments* args, int argc, char *argv[], const char* allowed_options);
 void args_destroy(Arguments* ptr);
-void print_args(Arguments* args);
 
 #endif /* PARSE_ARGS_H */
