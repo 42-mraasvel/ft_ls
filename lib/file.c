@@ -11,6 +11,7 @@
 #include <time.h>
 #include <errno.h>
 #include <string.h>
+#include <sys/xattr.h>
 
 // invariant: stat info is initialized
 static FileType get_filetype(File* file) {
@@ -53,6 +54,19 @@ static ResultType init_symlink(File* file) {
 	return Success;
 }
 
+static ResultType file_check_extended_attributes(File* file) {
+	file->has_extended_attributes = false;
+	ssize_t size = listxattr(string_cstr(file->path), NULL, 0, 0);
+	if (size < 0) {
+		format_error("listxattr: %s", strerror(errno));
+		file_destroy(file);
+		return StatError;
+	} else if (size != 0) {
+		file->has_extended_attributes = true;
+	}
+	return Success;
+}
+
 // invariant: file is not NULL
 // note: PATH will be NULL in the returned file
 ResultType file_from_path(const char* path, File* file) {
@@ -63,7 +77,10 @@ ResultType file_from_path(const char* path, File* file) {
 	file->path = malloc_check(string_from(path));
 	file->type = get_filetype(file);
 	file->date = NULL;
-	return init_symlink(file);
+	if (init_symlink(file) != Success) {
+		return StatError;
+	}
+	return file_check_extended_attributes(file);
 }
 
 ResultType file_from_dirent(const char* parent, struct dirent* entry, File* file) {
@@ -75,7 +92,10 @@ ResultType file_from_dirent(const char* parent, struct dirent* entry, File* file
 	}
 	file->type = get_filetype(file);
 	file->date = NULL;
-	return init_symlink(file);
+	if (init_symlink(file) != Success) {
+		return StatError;
+	}
+	return file_check_extended_attributes(file);
 }
 
 void file_destroy(File* file) {
@@ -200,6 +220,14 @@ static char other_exec_mode(File* file) {
 	}
 }
 
+static char extended_attribute_mode(File* file) {
+	if (file->has_extended_attributes) {
+		return '@';
+	} else {
+		return ' ';
+	}
+}
+
 static String* string_mode(File* file) {
 	// TODO: add extended attributes
 	return string_format("%c%c%c%c%c%c%c%c%c%c%c",
@@ -213,7 +241,7 @@ static String* string_mode(File* file) {
 		file->info.st_mode & S_IROTH ? 'r' : '-',
 		file->info.st_mode & S_IWOTH ? 'w' : '-',
 		other_exec_mode(file),
-		' '
+		extended_attribute_mode(file)
 	);
 }
 

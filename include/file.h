@@ -25,6 +25,7 @@ typedef struct File {
 	struct stat info;
 	char* date;
 	char* referenced_name;
+	bool has_extended_attributes;
 } File;
 
 typedef enum LongListingIndex {
